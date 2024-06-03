@@ -5,12 +5,13 @@ from cvzone.PlotModule import LivePlot
 import cvzone
 
 detector = FaceMeshDetector(maxFaces=1) # maximum 1 face will detect
-plot = LivePlot(360, 360, [20, 50]) # size_x, size_y, [lowest value, highest value]
+plot = LivePlot(480, 480, [20, 50]) # size_x, size_y, [lowest value, highest value]
 
 
 idList = [159, 23, 160, 163, 145, 144, 246, 153, 158, 159, 157] # landmarks in the eyes
 blinkCount = 0
 frameCount = 0
+avg_blink=0
 ratioList = []
 blink = False
 ratioAvg = 0
@@ -26,7 +27,9 @@ while True:
     
     
     _, img = cap.read()
+    img = cv2.flip(img, 1)
     img, faces = detector.findFaceMesh(img, draw=False) # finding face
+    
     
     if faces:
         face = faces[0]
@@ -36,10 +39,6 @@ while True:
             
             lengthVer, _ = detector.findDistance(leftDown, leftUp)
             lengthHor, _ = detector.findDistance(leftLeft, leftRight)
-                        
-            cv2.circle(img, face[id], 3, (0, 255, 0), cv2.FILLED) # landmarks
-            cv2.line(img, leftDown, leftUp, (255, 0, 255), 3) # vertical line in the eye
-            cv2.line(img, leftRight, leftLeft, (255, 0, 255), 3) # horizontal line in eye
             
             ratio = (lengthVer/lengthHor)*100 # to normalize the value also helps if the persons distance change
             ratioList.append(ratio)
@@ -61,7 +60,7 @@ while True:
                         avg_time = sum(avgBlinkList)/len(avgBlinkList)
                         avg_blink = 60/avg_time
                         avg_blink = int(avg_blink)
-                        avgBlinkList.pop(0)
+                        avgBlinkList.clear()
                 else:
                     blinked_time = time.time()
                 
@@ -69,13 +68,13 @@ while True:
             if blink==True and ratioAvg > 39: # if eye opened
                 blink = False
             # if eye not opened, it wont count
-            
-                    
+    
+    cv2.putText(img, "Press 'v' or 'esc' to quit.", (10, 470), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), 1)
     imgplot = plot.update(ratioAvg) # plotting
     # showing the count
-    cvzone.putTextRect(img, f"Count : {blinkCount}", (8, 30), 2, 2, (0, 0, 255), (120, 120, 210), cv2.FONT_HERSHEY_PLAIN)
-    cvzone.putTextRect(img, f"Avg Blink Per Min : {avg_blink}", (10, 470), 2, 2, (0, 0, 255), (120, 120, 210), cv2.FONT_HERSHEY_PLAIN)
-    img = cv2.resize(img, (360, 360))
+    cvzone.putTextRect(img, f"Count : {blinkCount}", (0, 30), 2, 2, (0, 0, 255), (120, 120, 210), cv2.FONT_HERSHEY_PLAIN)
+    cvzone.putTextRect(img, f"Avg Blink Per Min : {avg_blink}", (230, 30), 2, 2, (0, 0, 255), (120, 120, 210), cv2.FONT_HERSHEY_PLAIN)
+    img = cv2.resize(img, (600, 480))
     # stacking the frame and plotting
     imgstack = cvzone.stackImages([img, imgplot], 2, 1)
     cv2.imshow("Eye Blink Counter (Look into the screen for better results)", imgstack)
